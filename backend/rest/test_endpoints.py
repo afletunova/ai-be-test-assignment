@@ -34,23 +34,22 @@ def test_research():
 
 
 def test_sources():
-    files = [
-        (
-            "files",
-            ("file1.md", open(test_files_dir / "file1.md", "rb"), "text/markdown"),
-        ),
-        (
-            "files",
-            ("file2.md", open(test_files_dir / "file2.md", "rb"), "text/markdown"),
-        ),
-    ]
+    file1 = test_files_dir / "file1.md"
+    file2 = test_files_dir / "file2.md"
 
-    response = client.post("/api/sources", files=files)
+    with file1.open("rb") as f1, file2.open("rb") as f2:
+        response = client.post(
+            "/api/sources",
+            files=[
+                ("files", ("file1.md", f1, "text/markdown")),
+                ("files", ("file2.md", f2, "text/markdown")),
+            ],
+        )
+
     assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/plain")
-
-    lines = list(response.iter_lines())
-    expected_message = f"Added {len(files)} files"
-    expected_lines = expected_message.splitlines()
-
-    assert lines == expected_lines
+    assert response.json() == {
+        "uploaded": [
+            {"name": "file1.md", "size": file1.stat().st_size, "type": "text/markdown"},
+            {"name": "file2.md", "size": file2.stat().st_size, "type": "text/markdown"},
+        ]
+    }

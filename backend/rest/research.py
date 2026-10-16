@@ -15,17 +15,13 @@ class ResearchRequest(BaseModel):
     request: str
 
 
-class ResearchResponse(BaseModel):
-    message: str
-
-
-@app.post("/research", response_model=ResearchResponse, status_code=200)
+@app.post("/research", status_code=200)
 async def research(request: ResearchRequest):
     async def event_generator() -> AsyncIterable[str]:
         logger.info(f"Research request: {request.request}")
-        response = ResearchResponse(message=f"Research request: {request.request}")
+        response = f"Research request: {request.request}"
 
-        for line in response.message.splitlines():
+        for line in response.splitlines():
             yield line + "\n"
 
     return StreamingResponse(event_generator(), media_type="text/plain")
