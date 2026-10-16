@@ -1,0 +1,11 @@
+services: 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/backend
+    working_dir: /backend
+    command: fastapi run main.py --port 8080
