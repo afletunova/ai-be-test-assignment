@@ -1,5 +1,6 @@
 import requests
 import subprocess
+import json
 
 from .llm_client import LLMClient
 
@@ -21,8 +22,11 @@ class OllamaClient(LLMClient):
         response.raise_for_status()
 
         data = response.json()
-        if "embedding" in data:
-            return data["embedding"]
+        embedding = data.get("embedding")
+        if isinstance(embedding, str):
+            embedding = json.loads(embedding)
+        if isinstance(embedding, list):
+            return embedding
         elif "error" in data:
             raise RuntimeError(f"Error from embedding API: {data['error']}")
         else:
