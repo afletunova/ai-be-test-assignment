@@ -1,7 +1,8 @@
 from fastapi import FastAPI, File, UploadFile
-import logging
 from .rest.research import app as research_app
 from .rest.sources import app as sources_app
+
+import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
