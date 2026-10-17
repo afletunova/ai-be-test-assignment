@@ -41,9 +41,14 @@ def init_db(conn):
 
 def embed_and_store(llm_client, text):
     # TODO: reuse one connection
+    # TODO: make the connection a parameter and do not create one inside
     # TODO: use batch embed
     # TODO: store source name and identify each chunk
-    conn = psycopg.connect(os.environ["DATABASE_URL"], autocommit=True)
+    DATABASE_URL = (
+        os.environ.get("DATABASE_URL")
+        or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:{os.environ.get('POSTGRES_PASSWORD', 'password')}@db:5432/{os.environ.get('POSTGRES_DB', 'research_semantic')}"
+    )
+    conn = psycopg.connect(DATABASE_URL, autocommit=True)
     try:
         init_db(conn)
         embedding = llm_client.embed(text)

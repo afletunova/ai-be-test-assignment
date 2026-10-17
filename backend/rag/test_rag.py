@@ -37,3 +37,21 @@ def test_ollama_class_embed():
     response = client.embed("Test Ollama Embed")
 
     print(response)
+
+
+def test_embed_and_store():
+    from .main import embed_and_store
+    from .llm_client import ollama_client
+
+    client = ollama_client.OllamaClient(api_url=os.environ.get("REMOTE_OLLAMA_HOST"))
+
+    embed_and_store(client, "Test embed_and_store")
+
+
+def test_chunk_and_process():
+    from .main import chunk_and_process
+    from .llm_client import ollama_client
+
+    client = ollama_client.OllamaClient(api_url=os.environ.get("REMOTE_OLLAMA_HOST"))
+
+    chunk_and_process(client, "Test chunk_and_process")
