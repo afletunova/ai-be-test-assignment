@@ -1,6 +1,12 @@
 import os
+from unittest import result
 import ollama
 from openai import OpenAI
+
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def test_openai_embedding():
@@ -55,3 +61,14 @@ def test_chunk_and_process():
     client = ollama_client.OllamaClient(api_url=os.environ.get("REMOTE_OLLAMA_HOST"))
 
     chunk_and_process(client, "Test chunk_and_process")
+
+
+def test_search():
+    from .main import search
+    from .llm_client import ollama_client
+
+    client = ollama_client.OllamaClient(api_url=os.environ.get("REMOTE_OLLAMA_HOST"))
+
+    results = search(client, 2)
+
+    logger.info(f"Test Search Results: {results}")

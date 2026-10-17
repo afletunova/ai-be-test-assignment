@@ -22,19 +22,16 @@ def get_llm_client(mode: str) -> llm_client.LLMClient:
         raise ValueError(f"Unsupported embedding mode: {mode}")
 
 
-"""!!! The part from here to the next comment is not tested !!!"""
-
-
 def init_db(conn):
     # TODO: run once at startup
     # TODO: dimension is hardcoded, but it should match the embedder
     conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
     register_vector(conn)
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS text_chunks (
             id bigserial PRIMARY KEY,
             content text,
-            embedding vector(1536)
+            embedding vector({os.environ.get("VECTOR_SIZE")})
         )
         """)
 
@@ -49,15 +46,18 @@ def embed_and_store(llm_client, text):
         or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:{os.environ.get('POSTGRES_PASSWORD', 'password')}@db:5432/{os.environ.get('POSTGRES_DB', 'research_semantic')}"
     )
     conn = psycopg.connect(DATABASE_URL, autocommit=True)
+    cur = conn.cursor()
     try:
-        init_db(conn)
         embedding = llm_client.embed(text)
-        conn.execute(
-            "INSERT INTO text_chunks (content, embedding) VALUES (%s, %s)",
-            (text, Vector(embedding)),
+        query = (
+            "INSERT INTO text_chunks (content, embedding) VALUES (%s, %s) RETURNING id"
         )
+        cur.execute(query, (text, Vector(embedding)))
+        id = cur.fetchone()[0]
     finally:
         conn.close()
+
+    return id
 
 
 def chunk_and_process(llm_client, text_data):
@@ -69,9 +69,38 @@ def chunk_and_process(llm_client, text_data):
     )
 
     docs = text_splitter.create_documents([text_data])
+    docs_id = []
 
     for doc in docs:
         embed_and_store(llm_client=llm_client, text=doc.page_content)
+        docs_id.append(id)
+
+    return docs_id
+
+
+def search(llm_client, question_id, k=5):
+    DATABASE_URL = (
+        os.environ.get("DATABASE_URL")
+        or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:{os.environ.get('POSTGRES_PASSWORD', 'password')}@db:5432/{os.environ.get('POSTGRES_DB', 'research_semantic')}"
+    )
+    conn = psycopg.connect(DATABASE_URL, autocommit=True)
+    cur = conn.cursor()
+    try:
+        question_embed_query = "SELECT embedding FROM text_chunks WHERE id = %s;"
+        cur.execute(question_embed_query, (question_id,))
+        question_embed = cur.fetchone()[0]
+
+        results_query = (
+            "SELECT content FROM text_chunks ORDER BY embedding <-> %s DESC LIMIT %s;"
+        )
+        cur.execute(results_query, (question_embed, k))
+        results = cur.fetchall()
+    finally:
+        conn.close()
+
+    top_k_similar_texts = "\n".join(row[0] for row in results)
+
+    return top_k_similar_texts
 
 
 def main():
@@ -82,8 +111,6 @@ def main():
     text = "Example input text for embedding"
     chunk_and_process(client, text)
 
-
-"""!!! The not tested part is ending here!!!"""
 
 if __name__ == "__main__":
     main()
