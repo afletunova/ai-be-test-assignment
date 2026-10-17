@@ -21,22 +21,22 @@ def get_llm_client(mode: str) -> llm_client.LLMClient:
     else:
         raise ValueError(f"Unsupported embedding mode: {mode}")
 
+
 """!!! The part from here to the next comment is not tested !!!"""
 
-def init_db(conn): 
+
+def init_db(conn):
     # TODO: run once at startup
     # TODO: dimension is hardcoded, but it should match the embedder
     conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
     register_vector(conn)
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS documents (
             id bigserial PRIMARY KEY,
             content text,
             embedding vector(1536)
         )
-        """
-    )
+        """)
 
 
 def embed_and_store(llm_client, text):
@@ -60,9 +60,7 @@ def chunk_and_process(llm_client, text_data):
     # TODO: accept filename/metadata
     # TODO: keep the same connection
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        separators=["\n\n", "\n", " ", ""]
+        chunk_size=1000, chunk_overlap=200, separators=["\n\n", "\n", " ", ""]
     )
 
     docs = text_splitter.create_documents([text_data])
@@ -78,6 +76,7 @@ def main():
 
     text = "Example input text for embedding"
     chunk_and_process(client, text)
+
 
 """!!! The not tested part is ending here!!!"""
 

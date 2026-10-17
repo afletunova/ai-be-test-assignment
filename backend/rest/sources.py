@@ -1,6 +1,10 @@
 from fastapi import APIRouter, UploadFile, File
 from pydantic import BaseModel
 
+from ..rag import chunk_and_process, get_llm_client
+from ..rag.llm_client import llm_client, ollama_client, openai_client
+
+import os
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +27,9 @@ class UploadResult(BaseModel):
 async def add_files(files: list[UploadFile] = File(...)) -> UploadResult:
     uploaded: list[UploadedFile] = []
 
+    mode = os.environ.get("MODE") or "ollama"
+    client = get_llm_client(mode)
+
     for file in files:
         logger.info(f"Processing file: {file.filename}")
         file_content = await file.read()
@@ -33,6 +40,8 @@ async def add_files(files: list[UploadFile] = File(...)) -> UploadResult:
                 type=file.content_type or "application/octet-stream",
             )
         )
+        # TODO: decide if there's a need to store the doc
+        chunk_and_process(client, file)
 
     logger.info(f"Uploaded {len(uploaded)} files")
     return UploadResult(uploaded=uploaded)
