@@ -1,7 +1,7 @@
 services: 
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -9,3 +9,21 @@ services:
       - ./backend:/backend
     working_dir: /backend
     command: fastapi run main.py --port 8080
+
+  db:
+    image: pgvector/pgvector:pg18
+    container_name: pgvector-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-research_semantic}
+      VECTOR_SIZE: ${VECTOR_SIZE:-4096}
+    ports:
+      - "5434:5432"
+    volumes:
+      - data_sql:/var/lib/postgresql
+      - ./postgres/init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh:ro
+      - ./postgres/schema.sql:/tmp/schema.sql:ro
+
+volumes:
+  data_sql:
