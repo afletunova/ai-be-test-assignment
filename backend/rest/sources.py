@@ -2,7 +2,6 @@ from fastapi import APIRouter, UploadFile, File
 from pydantic import BaseModel
 
 from ..rag import chunk_and_process, get_llm_client
-from ..rag.llm_client import llm_client, ollama_client, openai_client
 
 import os
 import logging

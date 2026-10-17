@@ -6,8 +6,10 @@ COPY ./requirements.txt /requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /requirements.txt
 
-COPY ./backend/ /backend/
+COPY ./rag /rag
+COPY ./rest /rest
 COPY ./entrypoint.sh /entrypoint.sh
+COPY ./main.py /main.py
 
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]

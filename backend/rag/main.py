@@ -2,7 +2,7 @@
 # Not tested: DB, chunk-to-vector, retrieval
 # Not implemented yet: search, answer gen
 
-from llm_client import llm_client, ollama_client, openai_client
+from .llm_client import llm_client, ollama_client, openai_client
 
 from pgvector import Vector
 from pgvector.psycopg import register_vector
@@ -31,7 +31,7 @@ def init_db(conn):
     conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
     register_vector(conn)
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS documents (
+        CREATE TABLE IF NOT EXISTS text_chunks (
             id bigserial PRIMARY KEY,
             content text,
             embedding vector(1536)
@@ -48,7 +48,7 @@ def embed_and_store(llm_client, text):
         init_db(conn)
         embedding = llm_client.embed(text)
         conn.execute(
-            "INSERT INTO documents (content, embedding) VALUES (%s, %s)",
+            "INSERT INTO text_chunks (content, embedding) VALUES (%s, %s)",
             (text, Vector(embedding)),
         )
     finally:

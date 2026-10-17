@@ -1,12 +1,11 @@
-from app.backend.rag.main import chunk_and_process
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from collections.abc import AsyncIterable
 from pydantic import BaseModel
 
 from ..rag import chunk_and_process, get_llm_client
-from ..rag.llm_client import llm_client, ollama_client, openai_client
 
+import os
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +25,7 @@ async def research(request: ResearchRequest):
     mode = os.environ.get("MODE") or "ollama"
     client = get_llm_client(mode)
 
-    chunk_and_process(client, request)
+    chunk_and_process(client, request.request)
 
     async def event_generator() -> AsyncIterable[str]:
         response = f"Research request: {request.request}"
