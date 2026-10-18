@@ -12,7 +12,7 @@ This backend module is supposed to:
 - Build an LLM research agent that acts on the user’s research request.
 - The agent should be able to utilise external sources.
 
-At the moment, it does everything in the list above except answer generation and using external sources. Also, its compatibility with the provided Frontend is not fully tested yet.
+At the moment, it does everything in the list above except using external sources. Also, its compatibility with the provided Frontend is not fully tested yet.
 
 ## Architecture
 
@@ -34,9 +34,11 @@ For the database, I chose PostgreSQL with the pgvector extension since I am fami
 ## Prerequisites
 
 - Docker & Docker Compose
-- Python 3.13+
-- PostrgreSQL with pgvector (presented here via official Docker image)
+- Python 3.14+
+- PostgreSQL with pgvector (presented here via official Docker image)
 - Ollama server (I spun up my own on Flask) or OpenAI API key
+
+
 
 ## Environmental Variables
 
@@ -87,6 +89,8 @@ pip install -r requirements.txt
 ```bash
 fastapi run main.py --port 8080
 ```
+
+
 
 ## API Endpoints
 
@@ -155,6 +159,8 @@ app/
 - The deployment is containerised with PostgreSQL and the backend.
 - Logging and exception handling are supported on a basic level.
 
+
+
 ## Testing
 
 You can run tests using pytest (with env variables set up): 
@@ -183,13 +189,32 @@ curl -N -X POST "http://localhost:8080/api/research" \
   -d '{"request": "What is the role of the hippocampus and neocortex in memory formation?"}'
 ```
 
+
+
 ## Development Notes
 
 Right now, the database is only initialised on the first run, so you can only choose the model and vector_size at the beginning. You cannot add embeddings using another model. Vector size must match the embedding model (1536 for OpenAI, 4096 for some Ollama models).
 
 LLM responses return structured JSON with question/answer/sources. 
 
-Search uses cosine similarity (`<->` in psql).
+Search uses L2 distance (`<->` in psql).
+
+## What else I would have done given more time
+
+The scope of this task exceeded the suggested hours, so I prioritised building a first end-to-end pipeline scaffold.
+
+What I’d change:
+
+- I would have spent more time testing frontend <-> backend integration in a containerised environment, but I hit some frontend errors that I decided not to dive deep into.
+- I would have added external sources usage, of course.
+- DB connections should be optimised. Right now, I stopped at a simple connection per chunk, but to make this solution production-ready, I would spend time on proper connection pooling.
+- Embedding and chunk processing can also be parallelised. For instance, my first step would have been to add batch processing of incoming documents.
+- I would have stored more data on each document and question. Metadata can provide proper source references for each answer the agent returns.
+- Agentic usage could also have gone beyond simple embedding, vector search, and answer generation.
+- The current solution doesn’t store which model was used for embedding answers. Answers themselves are worth saving.
+- I would have added response evaluation based on the model used, prompt version, and other metadata, depending on what would have been done at this point.
+- The Golden Set of research requests, with and without related documents, would have been an essential addition to this pipeline.
+- Not everything in this solution was fully tested. I can think of many scenarios where something crashes or doesn’t work as expected, so test coverage should have improved, and the implementation should have changed.
 
 ## AI disclosure
 
@@ -199,7 +224,7 @@ Where AI wasn't used:
 - Writing the code
 - Setting up the infrastructure
 - Solving the task
-- Etc.
+- Making decisions
 
 Where it was used (as a part of how I am thinking and being efficient):
 

@@ -89,7 +89,9 @@ def search(llm_client, question_id, k=5):
         cur.execute(question_embed_query, (question_id,))
         question_embed = cur.fetchone()[0]
 
-        results_query = "SELECT id, content FROM text_chunks ORDER BY embedding <-> %s DESC LIMIT %s;"
+        results_query = (
+            "SELECT id, content FROM text_chunks ORDER BY embedding <-> %s LIMIT %s;"
+        )
         cur.execute(results_query, (question_embed, k))
         results = cur.fetchall()
     finally:

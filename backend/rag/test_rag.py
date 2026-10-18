@@ -1,7 +1,6 @@
 import os
-from unittest import result
-from app.backend.rag.main import research_and_answer
 import ollama
+
 from openai import OpenAI
 from pathlib import Path
 
