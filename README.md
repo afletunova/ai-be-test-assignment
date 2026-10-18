@@ -3,6 +3,7 @@
 This repository showcases the research agent I created for an AI Engineer position. 
 
 ## Overview
+
 This backend module is supposed to:
 
 - Receive REST requests from the provided frontend.
@@ -14,24 +15,35 @@ This backend module is supposed to:
 At the moment, it does everything in the list above except answer generation and using external sources. Also, its compatibility with the provided Frontend is not fully tested yet.
 
 ## Architecture
-For the API side, I chose FastAPI as an efficient framework for Python. Automatic documentation also covers part of the assignment.
 
-At the moment, the RAG pipeline consists of chunking, embedding, vector storage, and vector search. Chunking is done using LangChain's RecursiveCharacterTextSplitter, which splits text into small enough chunks recursively for this RAG prototype. It also fits well with the solution.
+For the API side, I chose FastAPI as an efficient Python framework. Automatic documentation also covers part of the assignment.
+
+What's working now: 
+
+- REST endpoints functional
+- Streaming research responses implemented
+- File embedding working
+- Research agent with LLM answer generation
+
+External resources were not yet covered.
 
 I also implemented an LLM client abstraction, letting me choose between Ollama and OpenAI models. Currently, I’ve been testing this solution primarily on Ollama to save on OpenAI tokens.
 
 For the database, I chose PostgreSQL with the pgvector extension since I am familiar with both and it’s a good combination to use for this prototype.
 
 ## Prerequisites
+
 - Docker & Docker Compose
-- Pythin 3.13+
-- PostrgeSQL with pgvector (presented here via official Docker image)
-- Ollama server (I spinned up my own on Flask) or OpenAI API key
+- Python 3.13+
+- PostrgreSQL with pgvector (presented here via official Docker image)
+- Ollama server (I spun up my own on Flask) or OpenAI API key
 
 ## Environmental Variables
-Most of them are optional, however to test this pipeline, it is better to either fill Ollama's remote host var, or to use OpenAI API key.
+
+Most of them are optional. However, to test this pipeline, it is better to either fill in Ollama’s remote host var, or to use an OpenAI API key.
 
 ## Installation & Setup
+
 I recommend using Docker.
 
 1. Clone repository
@@ -47,7 +59,7 @@ cd ai-be-test-assignment.git
 cp .env.example .env
 ```
 
-And fill missing variables with your own credentials
+And fill in the missing variables with your own credentials
 
 1. (Optional) Run docker compose
 
@@ -58,11 +70,12 @@ docker compose up
 This step should create two containers: 
 
 - one with the backend itself 
-- and the second with PostgreSQL database
+- and the second with the PostgreSQL database
 
 Or you can proceed without Docker
 
 ### Local Development
+
 1. Install dependencies
 
 ```bash
@@ -75,11 +88,10 @@ pip install -r requirements.txt
 fastapi run main.py --port 8080
 ```
 
-
-
 ## API Endpoints
+
 1. `POST /api/research`
-  - Summary: Research endpoint, expecting the research request as an input, and streaming the answer back. 
+  - Summary: Research endpoint, expecting the research request as input, and streaming the answer back.
   - Request Body:
     - Content-Type: `application/json`
     - Schema:
@@ -92,7 +104,7 @@ fastapi run main.py --port 8080
       - `200 OK` — Successful response
       - `422 Unprocessable Entity` — Validation error, returns details about the validation issues.
 2. `POST /api/sources`
-  - Summary: Upload files into the backend and process them
+  - Summary: Upload files to the backend and process them.
   - Request Body: 
     - Content-Type: `multipart/form-data`
     - Schema:
@@ -115,23 +127,86 @@ fastapi run main.py --port 8080
 
 ## Project Structure
 
-
+app/
+├── backend/
+│   ├── main.py              # FastAPI application entry point
+│   ├── rag/
+│   │   ├── main.py          # RAG pipeline (chunking, embedding, search, research)
+│   │   ├── llm_client/      # LLM client abstraction
+│   │   │   ├── llm_client.py       # Base interface
+│   │   │   ├── openai_client.py    # OpenAI implementation
+│   │   │   └── ollama_client.py    # Ollama implementation
+│   │   └── test_rag.py      # RAG tests
+│   └── rest/
+│       ├── research.py      # /api/research endpoint
+│       └── sources.py       # /api/sources endpoint
+├── postgres/
+│   ├── init-db.sh          # Database initialization script
+│   └── schema.sql          # Database schema with pgvector
+├── compose.yaml            # Docker Compose configuration
+└── .env.example           # Environment variables template
 
 ## Key Features
 
-
+- This RAG pipeline supports switching between locally running Ollama and OpenAI with MODE and VECTOR_SIZE env variables.
+- Vector Search is supported by pgvector semantic search.
+- Chunking is performed via RecursiveCharacterTextSplitter for optimal chunk sizes.
+- Research requests can also be chunked.
+- The deployment is containerised with PostgreSQL and the backend.
+- Logging and exception handling are supported on a basic level.
 
 ## Testing
 
+You can run tests using pytest (with env variables set up): 
 
+```bash
+pytest backend/rag/test_rag.py -v
+pytest backend/rest/test_endpoints.py -v
+```
 
-## Error Handling
+Or test specific functionality
 
+```bash
+pytest backend/rag/test_rag.py::test_full_rag_with_ollama -v
+```
 
+You can also test the API using curl and the provided document examples:
+
+```bash
+curl -X POST "http://localhost:8080/api/sources" \
+  -F "files=@backend/tests/assets/file1.md"
+```
+
+```bash
+curl -N -X POST "http://localhost:8080/api/research" \
+  -H "Content-Type: application/json" \
+  -d '{"request": "What is the role of the hippocampus and neocortex in memory formation?"}'
+```
 
 ## Development Notes
 
+Right now, the database is only initialised on the first run, so you can only choose the model and vector_size at the beginning. You cannot add embeddings using another model. Vector size must match the embedding model (1536 for OpenAI, 4096 for some Ollama models).
 
+LLM responses return structured JSON with question/answer/sources. 
+
+Search uses cosine similarity (`<->` in psql).
 
 ## AI disclosure
+
+Where AI wasn't used: 
+
+- Architecture and design
+- Writing the code
+- Setting up the infrastructure
+- Solving the task
+- Etc.
+
+Where it was used (as a part of how I am thinking and being efficient):
+
+- Planning and prioritising tasks (I have my own time and task management system that utilises an agent)
+- For my own research of existing solutions, primarily to save time, I used AI as an advanced search engine, which helped me to summarise key points about certain embedding models available for me to test within this solution (I chose the best and most appropriate tools myself based on the information I’ve gathered, including the information I found using simple search engines)
+- Generating api/research requests to test the app
+- I used AI to review what I’ve managed to finish, update my tasks, and see what gaps I left at the very end of implementation. 
+- Used Grammarly to polish the README since English isn't my first language, and I’ve relied on it for years.
+- Used an agent to generate the project’s structure for the README.
 

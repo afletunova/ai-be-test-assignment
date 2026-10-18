@@ -1,7 +1,3 @@
-# Draft ingest path. Not wired to POST /api/sources yet.
-# Not tested: DB, chunk-to-vector, retrieval
-# Not implemented yet: search, answer gen
-
 from .llm_client import llm_client, ollama_client, openai_client
 
 from pgvector import Vector
