@@ -12,11 +12,13 @@ This backend module is supposed to:
 - Build an LLM research agent that acts on the user’s research request.
 - The agent should be able to utilise external sources.
 
-At the moment, it does everything in the list above except using external sources. Also, its compatibility with the provided Frontend is not fully tested yet.
+Currently, it does everything in the list above except use external sources. Also, its compatibility with the provided Frontend is not fully tested yet.
 
 ## Architecture
 
 For the API side, I chose FastAPI as an efficient Python framework. Automatic documentation also covers part of the assignment.
+
+I used Postgres, Docker, and Ollama at the start to optimise time spent on testing and rebuilding.
 
 What's working now: 
 
@@ -146,7 +148,7 @@ app/
 │       ├── research.py      # /api/research endpoint
 │       └── sources.py       # /api/sources endpoint
 ├── postgres/
-│   ├── init-db.sh          # Database initialization script
+│   ├── init-db.sh          # Database initialisation script
 │   └── schema.sql          # Database schema with pgvector
 ├── compose.yaml            # Docker Compose configuration
 └── .env.example           # Environment variables template
