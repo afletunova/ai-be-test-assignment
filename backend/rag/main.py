@@ -10,6 +10,7 @@ from pgvector.psycopg import register_vector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 import psycopg
+import json
 import os
 
 
@@ -103,7 +104,7 @@ def search(llm_client, question_id, k=5):
     return top_k_similar_texts
 
 
-def research(llm_client, text):
+def research_and_answer(llm_client, text):
     # TODO: stream the response
     docs_id, questions = chunk_and_process(llm_client, text)
 
@@ -111,6 +112,9 @@ def research(llm_client, text):
         question_text = question.page_content
         text_chunks = search(llm_client, id)
         response = llm_client.response(question, text_chunks)
+
+        if isinstance(response, str):
+            response = json.loads(response)
 
         yield response
 

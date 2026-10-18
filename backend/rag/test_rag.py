@@ -1,5 +1,6 @@
 import os
 from unittest import result
+from app.backend.rag.main import research_and_answer
 import ollama
 from openai import OpenAI
 from pathlib import Path
@@ -114,7 +115,7 @@ def test_ollama_response():
 
 
 def test_full_rag_with_ollama():
-    from .main import chunk_and_process, research
+    from .main import chunk_and_process, research_and_answer
     from .llm_client import ollama_client
     import os
 
@@ -132,6 +133,5 @@ def test_full_rag_with_ollama():
     question = "What is the role of the hippocampus and neocortex in memory formation?"
     logger.info(f"Research question: {question}")
 
-    response = research(client, question)
-    responses = list(research(client, question))
+    responses = list(research_and_answer(client, question))
     logger.info(f"Research answers: {responses}")

@@ -1,12 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from collections.abc import AsyncIterable
 from pydantic import BaseModel
 
-from ..rag import chunk_and_process, get_llm_client
+from ..rag import get_llm_client, research_and_answer
 
 import os
 import logging
+import traceback
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,15 +23,28 @@ class ResearchRequest(BaseModel):
 async def research(request: ResearchRequest):
     logger.info(f"Research request: {request.request}")
 
-    mode = os.environ.get("MODE") or "ollama"
-    client = get_llm_client(mode)
-
-    chunk_and_process(client, request.request)
+    try:
+        mode = os.environ.get("MODE") or "ollama"
+        client = get_llm_client(mode)
+    except Exception as e:
+        logger.error(f"Failed to initialize LLM client: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, detail=f"LLM client initialization failed: {str(e)}"
+        )
 
     async def event_generator() -> AsyncIterable[str]:
-        response = f"Research request: {request.request}"
-
-        for line in response.splitlines():
-            yield line + "\n"
+        try:
+            for i, response in enumerate(
+                research_and_answer(client, request.request), 1
+            ):
+                yield f"Research Response {i}\n\n"
+                yield f"{response['answer']}\n\n"
+            yield "\n"
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            raise HTTPException(
+                status_code=500, detail=f"Failed to process your request: {str(e)}"
+            )
 
     return StreamingResponse(event_generator(), media_type="text/plain")
