@@ -2,11 +2,14 @@ import os
 from unittest import result
 import ollama
 from openai import OpenAI
+from pathlib import Path
 
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+test_files_dir = Path(__file__).parent.parent / "tests" / "assets"
 
 
 def test_openai_embedding():
@@ -108,3 +111,27 @@ def test_ollama_response():
     response = client.response(question, text_chunks)
 
     logger.info(f"Test Ollama Response Result: {response}")
+
+
+def test_full_rag_with_ollama():
+    from .main import chunk_and_process, research
+    from .llm_client import ollama_client
+    import os
+
+    client = ollama_client.OllamaClient(api_url=os.environ.get("REMOTE_OLLAMA_HOST"))
+
+    file = test_files_dir / "file1.md"
+
+    with open(file, "r") as f:
+        document_text = f.read()
+        logger.info(f"Loaded document with {len(document_text)} characters")
+
+    docs_id, chunks_content = chunk_and_process(client, document_text)
+    logger.info(f"Created {len(docs_id)} chunks with IDs: {docs_id}")
+
+    question = "What is the role of the hippocampus and neocortex in memory formation?"
+    logger.info(f"Research question: {question}")
+
+    response = research(client, question)
+    responses = list(research(client, question))
+    logger.info(f"Research answers: {responses}")

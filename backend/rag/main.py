@@ -6,6 +6,7 @@ from .llm_client import llm_client, ollama_client, openai_client
 
 from pgvector import Vector
 from pgvector.psycopg import register_vector
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 import psycopg
@@ -46,13 +47,12 @@ def embed_and_store(llm_client, text):
         or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:{os.environ.get('POSTGRES_PASSWORD', 'password')}@db:5432/{os.environ.get('POSTGRES_DB', 'research_semantic')}"
     )
     conn = psycopg.connect(DATABASE_URL, autocommit=True)
+    register_vector(conn)
     cur = conn.cursor()
     try:
         embedding = llm_client.embed(text)
-        query = (
-            "INSERT INTO text_chunks (content, embedding) VALUES (%s, %s) RETURNING id"
-        )
-        cur.execute(query, (text, Vector(embedding)))
+        query = "INSERT INTO text_chunks (content, embedding) VALUES (%s, %s::vector) RETURNING id"
+        cur.execute(query, (text, embedding))
         id = cur.fetchone()[0]
     finally:
         conn.close()
@@ -70,12 +70,14 @@ def chunk_and_process(llm_client, text_data):
 
     docs = text_splitter.create_documents([text_data])
     docs_id = []
+    chunks_content = []
 
     for doc in docs:
-        embed_and_store(llm_client=llm_client, text=doc.page_content)
-        docs_id.append(id)
+        chunk_id = embed_and_store(llm_client=llm_client, text=doc.page_content)
+        docs_id.append(chunk_id)
+        chunks_content.append(doc)
 
-    return docs_id
+    return docs_id, chunks_content
 
 
 def search(llm_client, question_id, k=5):
@@ -90,17 +92,27 @@ def search(llm_client, question_id, k=5):
         cur.execute(question_embed_query, (question_id,))
         question_embed = cur.fetchone()[0]
 
-        results_query = (
-            "SELECT content FROM text_chunks ORDER BY embedding <-> %s DESC LIMIT %s;"
-        )
+        results_query = "SELECT id, content FROM text_chunks ORDER BY embedding <-> %s DESC LIMIT %s;"
         cur.execute(results_query, (question_embed, k))
         results = cur.fetchall()
     finally:
         conn.close()
 
-    top_k_similar_texts = "\n".join(row[0] for row in results)
+    top_k_similar_texts = [{"id": row[0], "content": row[1]} for row in results]
 
     return top_k_similar_texts
+
+
+def research(llm_client, text):
+    # TODO: stream the response
+    docs_id, questions = chunk_and_process(llm_client, text)
+
+    for id, question in zip(docs_id, questions):
+        question_text = question.page_content
+        text_chunks = search(llm_client, id)
+        response = llm_client.response(question, text_chunks)
+
+        yield response
 
 
 def main():
