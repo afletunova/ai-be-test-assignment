@@ -131,6 +131,7 @@ fastapi run main.py --port 8080
 
 ## Project Structure
 
+```
 app/
 ├── backend/
 │   ├── main.py              # FastAPI application entry point
@@ -149,6 +150,7 @@ app/
 │   └── schema.sql          # Database schema with pgvector
 ├── compose.yaml            # Docker Compose configuration
 └── .env.example           # Environment variables template
+```
 
 ## Key Features
 
