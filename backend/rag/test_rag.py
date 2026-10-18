@@ -13,16 +13,20 @@ def test_openai_embedding():
     client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
     response = client.embeddings.create(
-        input="Test OpenAI Embedding", model="text-embedding-3-small"
+        input="Test OpenAI Embedding Connection", model="text-embedding-3-small"
     )
 
-    print(response.data[0].embedding)
+    logger.info(
+        f"Test OpenAI Embedding Connection Results: {response.data[0].embedding}"
+    )
 
 
 def test_ollama_connection():
-    response = ollama.embed(input="Test Ollama Embedding", model="qwen3-embedding")
+    response = ollama.embed(
+        input="Test Ollama Embedding Connection", model="qwen3-embedding"
+    )
 
-    print(response["embeddings"])
+    logger.info(f"Test Ollama Embedding Connection Results: {response["embeddings"]}")
 
 
 def test_openai_class_embed():
@@ -32,7 +36,7 @@ def test_openai_class_embed():
 
     response = client.embed("Test OpenAI Embed")
 
-    print(response)
+    logger.info(f"Test OpenAI Embed Results{response}")
 
 
 def test_ollama_class_embed():
@@ -42,7 +46,7 @@ def test_ollama_class_embed():
 
     response = client.embed("Test Ollama Embed")
 
-    print(response)
+    logger.info(f"Test Ollama Embed Results{response}")
 
 
 def test_embed_and_store():
@@ -72,3 +76,35 @@ def test_search():
     results = search(client, 2)
 
     logger.info(f"Test Search Results: {results}")
+
+
+def test_openai_response():
+    from .llm_client import openai_client
+
+    client = openai_client.OpenAIClient()
+
+    question = "What is the capital of France?"
+    text_chunks = [
+        {"id": 48201193, "content": "France is a country in Western Europe."},
+        {"id": 92028485, "content": "Paris is the capital and largest city of France."},
+    ]
+
+    response = client.response(question, text_chunks)
+
+    logger.info(f"Test OpenAI Response Result: {response}")
+
+
+def test_ollama_response():
+    from .llm_client import ollama_client
+
+    client = ollama_client.OllamaClient(api_url=os.environ.get("REMOTE_OLLAMA_HOST"))
+
+    question = "What is the capital of France?"
+    text_chunks = [
+        {"id": 48201193, "content": "France is a country in Western Europe."},
+        {"id": 92028485, "content": "Paris is the capital and largest city of France."},
+    ]
+
+    response = client.response(question, text_chunks)
+
+    logger.info(f"Test Ollama Response Result: {response}")
