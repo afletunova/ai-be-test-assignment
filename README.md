@@ -1,37 +1,34 @@
-# AI Engineer Technical Test. Backend API — Research Agent.
+# Research Agent: RAG backend API
 
-This repository showcases the research agent I created for an AI Engineer position. 
+This repository showcases a research agent backend API that lets you upload text sources and ask research questions against them.
 
 ## Overview
 
-This backend module is supposed to:
+This backend module:
 
-- Receive REST requests from the provided frontend.
-- Stream responses back to the provided frontend.
-- Embed uploaded source files & query at the correct times.
-- Build an LLM research agent that acts on the user’s research request.
-- The agent should be able to utilise external sources.
+- Receives REST requests from the frontend.
+- Streams responses back to the frontend.
+- Embeds uploaded source files & queries at the correct times.
+- Builds an LLM research agent that acts on the user's research request.
 
 Currently, it does everything in the list above except use external sources. Also, its compatibility with the provided Frontend is not fully tested yet.
 
 ## Architecture
 
-For the API side, I chose FastAPI as an efficient Python framework. Automatic documentation also covers part of the assignment.
+For the API side, I chose FastAPI as an efficient Python framework. Automatic documentation is also available via OpenAPI.
 
 I used Postgres, Docker, and Ollama at the start to optimise time spent on testing and rebuilding.
 
-What's working now: 
+What's working now:
 
 - REST endpoints functional
 - Streaming research responses implemented
 - File embedding working
 - Research agent with LLM answer generation
 
-External resources were not yet covered.
+I also implemented an LLM client abstraction, letting me choose between Ollama and OpenAI models. Currently, I've been testing this solution primarily on Ollama to save on OpenAI tokens.
 
-I also implemented an LLM client abstraction, letting me choose between Ollama and OpenAI models. Currently, I’ve been testing this solution primarily on Ollama to save on OpenAI tokens.
-
-For the database, I chose PostgreSQL with the pgvector extension since I am familiar with both and it’s a good combination to use for this prototype.
+For the database, I chose PostgreSQL with the pgvector extension since I am familiar with both and it's a good combination to use for this prototype.
 
 ## Prerequisites
 
@@ -44,7 +41,7 @@ For the database, I chose PostgreSQL with the pgvector extension since I am fami
 
 ## Environmental Variables
 
-Most of them are optional. However, to test this pipeline, it is better to either fill in Ollama’s remote host var, or to use an OpenAI API key.
+Most of them are optional. However, to test this pipeline, it is better to either fill in Ollama's remote host var, or to use an OpenAI API key.
 
 ## Installation & Setup
 
@@ -53,13 +50,13 @@ I recommend using Docker.
 1. Clone repository
 
 ```bash
-git clone https://github.com/afletunova/ai-be-test-assignment.git
+git clone https://github.com/afletunova/research-agent-rag-api.git
 ```
 
 1. Set up the '.env' file
 
 ```bash
-cd ai-be-test-assignment.git
+cd research-agent-rag-api
 cp .env.example .env
 ```
 
@@ -71,9 +68,9 @@ And fill in the missing variables with your own credentials
 docker compose up
 ```
 
-This step should create two containers: 
+This step should create two containers:
 
-- one with the backend itself 
+- one with the backend itself
 - and the second with the PostgreSQL database
 
 Or you can proceed without Docker
@@ -106,12 +103,12 @@ fastapi run main.py --port 8080
         "request": "string"
     }
     ```
-    - Responses: 
+    - Responses:
       - `200 OK` — Successful response
       - `422 Unprocessable Entity` — Validation error, returns details about the validation issues.
 2. `POST /api/sources`
   - Summary: Upload files to the backend and process them.
-  - Request Body: 
+  - Request Body:
     - Content-Type: `multipart/form-data`
     - Schema:
     ```json
@@ -122,7 +119,7 @@ fastapi run main.py --port 8080
     }
     ```
     - Required field: `files` (array of files)
-  - Responses: 
+  - Responses:
     - `200 OK` — Successful upload response. Output reference: UploadResult. Contains an array of uploaded files with properties:
       - `name` (string)
       - `size` (integer)
@@ -167,7 +164,7 @@ app/
 
 ## Testing
 
-You can run tests using pytest (with env variables set up): 
+You can run tests using pytest (with env variables set up):
 
 ```bash
 pytest backend/rag/test_rag.py -v
@@ -199,30 +196,27 @@ curl -N -X POST "http://localhost:8080/api/research" \
 
 Right now, the database is only initialised on the first run, so you can only choose the model and vector_size at the beginning. You cannot add embeddings using another model. Vector size must match the embedding model (1536 for OpenAI, 4096 for some Ollama models).
 
-LLM responses return structured JSON with question/answer/sources. 
+LLM responses return structured JSON with question/answer/sources.
 
 Search uses L2 distance (`<->` in psql).
 
-## What else I would have done given more time
+## Next Steps and Plans
 
-The scope of this task exceeded the suggested hours, so I prioritised building a first end-to-end pipeline scaffold.
+This is a working scaffold, built as an end-to-end pipeline prototype. Here's what I'd add next:
 
-What I’d change:
-
-- I would have spent more time testing frontend <-> backend integration in a containerised environment, but I hit some frontend errors that I decided not to dive deep into.
-- I would have added external sources usage, of course.
-- DB connections should be optimised. Right now, I stopped at a simple connection per chunk, but to make this solution production-ready, I would spend time on proper connection pooling.
-- Embedding and chunk processing can also be parallelised. For instance, my first step would have been to add batch processing of incoming documents.
-- I would have stored more data on each document and question. Metadata can provide proper source references for each answer the agent returns.
-- Agentic usage could also have gone beyond simple embedding, vector search, and answer generation.
-- The current solution doesn’t store which model was used for embedding answers. Answers themselves are worth saving.
-- I would have added response evaluation based on the model used, prompt version, and other metadata, depending on what would have been done at this point.
-- The Golden Set of research requests, with and without related documents, would have been an essential addition to this pipeline.
-- Not everything in this solution was fully tested. I can think of many scenarios where something crashes or doesn’t work as expected, so test coverage should have improved, and the implementation should have changed.
+- **Frontend integration.** Spend more time testing frontend <-> backend integration in a containerised environment. There are some frontend errors that need investigation.
+- **External sources.** Add external sources usage. The agent currently answers only from uploaded documents, and adding web or API lookup would be the natural next step towards a more agentic flow.
+- **DB connections optimisation.** Right now, I'm using a simple connection per chunk. To make this solution production-ready, I'd implement proper connection pooling.
+- **Parallelisation.** Embedding and chunk processing can be parallelised. My first step would be to add batch processing of incoming documents.
+- **Metadata storage.** Store more data on each document and question. Metadata can provide proper source references for each answer the agent returns. The current solution doesn't store which model was used for embedding answers. Answers themselves are worth saving.
+- **Agentic capabilities.** Agentic usage could go beyond simple embedding, vector search, and answer generation.
+- **Response evaluation.** Add response evaluation based on the model used, prompt version, and other metadata.
+- **Golden Set.** A Golden Set of research requests, with and without related documents, would be an essential addition to this pipeline.
+- **Test coverage.** Not everything in this solution was fully tested. There are many scenarios where something crashes or doesn't work as expected, so test coverage should be improved, and the implementation refined.
 
 ## AI disclosure
 
-Where AI wasn't used: 
+Where AI wasn't used:
 
 - Architecture and design
 - Writing the code
@@ -233,9 +227,8 @@ Where AI wasn't used:
 Where it was used (as a part of how I am thinking and being efficient):
 
 - Planning and prioritising tasks (I have my own time and task management system that utilises an agent)
-- For my own research of existing solutions, primarily to save time, I used AI as an advanced search engine, which helped me to summarise key points about certain embedding models available for me to test within this solution (I chose the best and most appropriate tools myself based on the information I’ve gathered, including the information I found using simple search engines)
+- For my own research of existing solutions, primarily to save time, I used AI as an advanced search engine, which helped me to summarise key points about certain embedding models available for me to test within this solution (I chose the best and most appropriate tools myself based on the information I've gathered, including the information I found using simple search engines)
 - Generating api/research requests to test the app
-- I used AI to review what I’ve managed to finish, update my tasks, and see what gaps I left at the very end of implementation. 
-- Used Grammarly to polish the README since English isn't my first language, and I’ve relied on it for years.
-- Used an agent to generate the project’s structure for the README.
-
+- I used AI to review what I've managed to finish, update my tasks, and see what gaps I left at the very end of implementation.
+- Used Grammarly to polish the README since English isn't my first language, and I've relied on it for years.
+- Used an agent to generate the project's structure for the README.
